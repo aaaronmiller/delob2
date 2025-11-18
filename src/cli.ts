@@ -10,6 +10,11 @@ import { runFix } from './phases/fix.js';
 import { runIterate } from './phases/iterate.js';
 import { checkIntegrity } from './integrity.js';
 import { loadConfig } from './config.js';
+import { LogReader } from './bridge/log-reader.js';
+import { Parser } from './bridge/parser.js';
+import { Transformer } from './bridge/transformer.js';
+import { Relayer } from './bridge/relayer.js';
+import path from 'path';
 
 const program = new Command();
 
@@ -118,8 +123,60 @@ stack
   .command('start')
   .description('Start all components')
   .action(async () => {
-    console.log(chalk.blue('🚀 Starting Delobotomize stack...'));
-    console.log(chalk.yellow('⚠ Stack management not yet implemented'));
+    console.log(chalk.blue('🚀 Starting Delobotomize stack...\n'));
+
+    try {
+      const config = await loadConfig();
+      const projectRoot = process.cwd();
+      const proxyLogPath = path.join(projectRoot, '.delobotomize', 'proxy.log');
+
+      // Start hook bridge
+      console.log(chalk.gray('Starting hook bridge...'));
+      const reader = new LogReader(proxyLogPath);
+      const parser = new Parser();
+      const transformer = new Transformer(path.basename(projectRoot), {
+        contextWindow: 200000,
+        reasoningBudget: config.claude_code_proxy.reasoning.budget
+      });
+      const relayer = new Relayer(config.multi_agent_workflow.hooks.server_url);
+
+      // Check if monitoring server is available
+      const serverAvailable = await relayer.ping();
+      if (serverAvailable) {
+        console.log(chalk.green('✓ Monitoring server detected at ' + config.multi_agent_workflow.hooks.server_url));
+      } else {
+        console.log(chalk.yellow('⚠ Monitoring server not reachable'));
+        console.log(chalk.gray('  Start it with: delobotomize-monitor'));
+      }
+
+      // Set up event processing pipeline
+      reader.on('line', async (line) => {
+        try {
+          const entry = parser.parse(line);
+          const event = transformer.transform(entry);
+          await relayer.send(event);
+        } catch (error: any) {
+          // Silently skip malformed lines
+          if (error.message && !error.message.includes('Invalid TSV format')) {
+            console.error(chalk.red('Bridge error:'), error.message);
+          }
+        }
+      });
+
+      await reader.start();
+      console.log(chalk.green('✓ Hook bridge active'));
+      console.log(chalk.gray('  Watching: ' + proxyLogPath));
+      console.log(chalk.gray('  Relaying to: ' + config.multi_agent_workflow.hooks.server_url));
+
+      console.log(chalk.gray('\nPress Ctrl+C to stop'));
+
+      // Keep process alive
+      process.stdin.resume();
+
+    } catch (error: any) {
+      console.error(chalk.red('✗ Failed to start stack:'), error.message);
+      process.exit(1);
+    }
   });
 
 stack
