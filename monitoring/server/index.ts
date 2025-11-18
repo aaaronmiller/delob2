@@ -9,9 +9,17 @@
 
 import Database from 'bun:sqlite';
 import { serve } from 'bun';
+import { join, dirname } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
 
 const PORT = parseInt(process.env.PORT || '4000');
 const DB_PATH = process.env.DB_PATH || '.delobotomize/monitoring.db';
+
+// Get dashboard path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const DASHBOARD_PATH = join(__dirname, '../dashboard/index.html');
 
 // Initialize SQLite database
 const db = new Database(DB_PATH, { create: true });
@@ -61,6 +69,22 @@ const server = serve({
     // Handle OPTIONS (preflight)
     if (req.method === 'OPTIONS') {
       return new Response(null, { headers });
+    }
+
+    // Serve dashboard
+    if (url.pathname === '/' || url.pathname === '/dashboard') {
+      try {
+        if (existsSync(DASHBOARD_PATH)) {
+          const html = readFileSync(DASHBOARD_PATH, 'utf-8');
+          return new Response(html, {
+            headers: { 'Content-Type': 'text/html' }
+          });
+        } else {
+          return new Response('Dashboard not found', { status: 404 });
+        }
+      } catch (error: any) {
+        return new Response(error.message, { status: 500 });
+      }
     }
 
     // Health check
@@ -184,7 +208,9 @@ const server = serve({
 
 console.log(`🚀 Server running at http://localhost:${PORT}`);
 console.log('\nEndpoints:');
+console.log('  GET    /            - Web Dashboard');
 console.log('  POST   /api/events  - Store event');
 console.log('  GET    /api/events  - Query events');
 console.log('  GET    /api/stats   - Get statistics');
 console.log('  GET    /healthz     - Health check\n');
+console.log(`📊 Open dashboard: http://localhost:${PORT}\n`);

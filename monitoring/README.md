@@ -14,11 +14,21 @@ This monitoring system provides real-time event collection and storage for Claud
 
 ### Server (`server/index.ts`)
 
-Simple HTTP server that:
+Bun-based HTTP server that:
+- Serves web dashboard at `/`
 - Receives events via POST /api/events
 - Stores events in SQLite database
 - Provides query endpoints for analysis
 - Includes health check endpoint
+
+### Dashboard (`dashboard/index.html`)
+
+Real-time Vue 3 web interface featuring:
+- Live event monitoring
+- Session tracking and filtering
+- Event timeline visualization
+- Statistics and charts
+- Dark theme inspired by multi-agent-workflow
 
 ### Hooks (`hooks/`)
 
@@ -42,6 +52,17 @@ bun run monitoring/server/index.ts
 
 Server runs on http://localhost:4000
 
+### Access Web Dashboard
+
+Open http://localhost:4000 in your browser to access the real-time monitoring dashboard.
+
+Features:
+- Live event monitoring with 5-second refresh
+- Session management and filtering
+- Event timeline visualization
+- Statistics and charts
+- Event type filtering
+
 ### Configure Claude Code Hooks
 
 Copy hooks to your project's `.claude/hooks/` directory:
@@ -56,8 +77,15 @@ Set environment variable:
 export DELOBOTOMIZE_SERVER_URL=http://localhost:4000
 ```
 
-### Query Events
+### View Events
 
+**Web Dashboard** (Recommended):
+```bash
+# Open in browser
+open http://localhost:4000
+```
+
+**API** (For programmatic access):
 ```bash
 # Get all events
 curl http://localhost:4000/api/events
