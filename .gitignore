@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+*.tsbuildinfo
+
+# Build outputs
+packages/*/dist/
+packages/*/build/
+
+# IDE
+.vscode/
+.idea/
+
+# Delobotomize runtime
+.delobotomize/runs/
+.delobotomize/proxy.log
+.delobotomize/checkpoints/
+
+# .claude is generated, don't commit
+.claude/
+
+# Keep .delobotomize structure but not runtime data
+!.delobotomize/.gitkeep

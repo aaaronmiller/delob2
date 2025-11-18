@@ -1,0 +1,31 @@
+{
+  "name": "@delobotomize/frontend",
+  "version": "1.0.0",
+  "description": "Delobotomize dashboard frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold warning",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@delobotomize/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^3.0.0",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "svelte": "^4.2.8",
+    "svelte-check": "^3.6.2",
+    "tailwindcss": "^3.3.6",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7",
+    "vitest": "^1.0.4"
+  }
+}

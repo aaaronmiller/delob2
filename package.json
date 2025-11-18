@@ -1,0 +1,27 @@
+{
+  "name": "delobotomize",
+  "version": "1.0.0",
+  "description": "Claude Code monitoring and recovery toolchain",
+  "private": true,
+  "scripts": {
+    "dev:cli": "pnpm --filter @delobotomize/cli dev",
+    "dev:backend": "pnpm --filter @delobotomize/backend dev",
+    "dev:frontend": "pnpm --filter @delobotomize/frontend dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  },
+  "packageManager": "pnpm@8.11.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

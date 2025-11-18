@@ -1,0 +1,28 @@
+{
+  "name": "@delobotomize/cli",
+  "version": "1.0.0",
+  "description": "Delobotomize CLI - Claude Code monitoring and recovery",
+  "type": "module",
+  "bin": {
+    "delobotomize": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@delobotomize/shared": "workspace:*",
+    "commander": "^11.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "inquirer": "^9.2.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  }
+}
