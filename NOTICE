@@ -1,0 +1,34 @@
+DELOBOTOMIZE
+Copyright 2025 Delobotomize Core Team
+
+This product includes software developed by the Delobotomize Core Team.
+
+================================================================================
+
+This product vendors the following third-party software:
+
+1. multi-agent-workflow
+   - Repository: https://github.com/apolopena/multi-agent-workflow
+   - Commit: 4f2a9c1 (2025-11-10)
+   - License: MIT
+   - Copyright: © 2025 Apolo Pena
+   - Location: integrations/multi-agent-workflow/
+
+2. claude-code-proxy
+   - Repository: https://github.com/aaronmiller/claude-code-proxy
+   - Commit: b8d3e2f (2025-11-08)
+   - License: MIT
+   - Copyright: © 2025 Aaron Miller
+   - Location: integrations/claude-code-proxy/
+   - Modifications: Added file_logger.py middleware (patch applied on install)
+
+All vendored software retains its original LICENSE files and copyright notices.
+
+================================================================================
+
+This product integrates with but does not redistribute:
+
+- Claude Code CLI by Anthropic PBC (Proprietary License)
+  Users must install separately: npm install -g @anthropic-ai/claude-code
+
+================================================================================
