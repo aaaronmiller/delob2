@@ -12,6 +12,197 @@ Delobotomize is a comprehensive session-level monitoring and recovery system for
 - **Automated Artifact Generation** - Complete audit trails and manifests
 - **Integrity Enforcement** - Strict synchronization between `claude docs/` and `.claude/`
 - **No Auto-Kill Policy** - Sessions are never automatically terminated
+- **Auto-Deploy Services** - Backend and frontend start automatically (optional)
+
+## Quick Start
+
+### Installation (One-Time Setup)
+
+```bash
+# Clone and enter the repository
+cd /path/to/delob2
+
+# Install dependencies and build all packages
+pnpm install
+pnpm build
+
+# OPTION A: Run from the repository folder
+# (No global install needed, use relative path)
+
+# OPTION B: Install globally for system-wide access
+cd packages/cli
+npm link
+# Now you can use 'delobotomize' from anywhere
+```
+
+**Note on Global Install**: `npm link` creates a symlink so you can run `delobotomize` from anywhere on your system. You do NOT need to publish to npm or use `npm install -g` for this to work.
+
+### Basic Usage
+
+```bash
+# Run monitoring on a project (auto-starts backend + frontend)
+delobotomize /path/to/project
+
+# Run without dashboard
+delobotomize /path/to/project --no-frontend
+
+# Run without backend API
+delobotomize /path/to/project --no-backend
+
+# Initialize a project first
+delobotomize init --path /path/to/project
+
+# Check status
+delobotomize status
+```
+
+### Running from Repository (Without Global Install)
+
+```bash
+# From the delob2 directory, run via pnpm
+cd packages/cli
+pnpm dev -- /path/to/project
+
+# Or use the built version
+node packages/cli/dist/index.js /path/to/project
+```
+
+## Output Locations
+
+Delobotomize creates and manages files in the target project directory:
+
+```
+your-project/
+├── .delobotomize/
+│   ├── proxy.log              # Proxy activity log (source of truth)
+│   ├── claude-docs-integrity.json  # Integrity check results
+│   ├── runs/
+│   │   └── run_<timestamp>_<id>/
+│   │       ├── manifest.json       # Run metadata and phase records
+│   │       ├── MANIFEST.md         # Human-readable summary
+│   │       └── artifacts/
+│   │           ├── audit/
+│   │           │   ├── AUDIT_REPORT.md
+│   │           │   ├── file-inventory.json
+│   │           │   └── settings-validation.json
+│   │           ├── analysis/
+│   │           │   ├── ANALYSIS_REPORT.md
+│   │           │   └── CAUSAL_CHAIN.md
+│   │           ├── recovery/
+│   │           │   ├── RECOVERY_PLAN.md
+│   │           │   └── execution-order.json
+│   │           ├── fix/
+│   │           │   ├── FIX_REPORT.md
+│   │           │   ├── changes.patch
+│   │           │   └── test-results.json
+│   │           └── iterate/
+│   │               └── ITERATE_NOTES.md
+│   └── checkpoints/          # Git checkpoints before fixes
+├── .claude/                  # Runtime mirror (auto-generated)
+└── claude docs/              # Canonical configuration source
+```
+
+## User Story: Typical Session
+
+Here's what a typical Delobotomize session looks like:
+
+### Scenario: Monitoring a Claude Code Project
+
+```bash
+# 1. You have a project you want to monitor
+$ cd ~/my-claude-project
+
+# 2. Initialize Delobotomize (first time only)
+$ delobotomize init
+✔ Creating .claude directory structure...
+✔ Mirroring claude docs/ to .claude/...
+✔ Creating .delobotomize directory structure...
+✔ Verifying claude docs integrity...
+✔ Delobotomize initialized successfully
+  .claude/ directory created
+  .delobotomize/ directory created
+  Integrity report: .delobotomize/claude-docs-integrity.json
+
+# 3. Start monitoring (auto-starts backend + dashboard)
+$ delobotomize ~/my-claude-project
+✔ Verifying claude docs integrity...
+✔ Backend started on port 4000
+✔ Frontend started on port 5173
+✔ Monitoring active
+
+Delobotomize is running
+
+  Backend API:  http://localhost:4000
+  Dashboard:    http://localhost:5173
+  Project path: /Users/you/my-claude-project
+  Proxy log:    /Users/you/my-claude-project/.delobotomize/proxy.log
+
+Press Ctrl+C to stop
+
+# 4. Open browser and visit http://localhost:5173
+# You see the dashboard with:
+# - Live session list (currently active Claude Code sessions)
+# - Token utilization bar (showing context usage)
+# - Alerts tray (any rate limits, refusals, or stalls)
+# - Recent runs (history of audit/analysis/recovery cycles)
+
+# 5. Claude Code session experiences a stall
+# Dashboard shows:
+#   🔴 CRITICAL ALERT: Session stalled (idle for 125s)
+#   Context: 92.3% (critical threshold)
+
+# 6. Run recovery phases (in another terminal)
+$ delobotomize audit
+✔ Reading proxy logs...
+✔ Analyzing session incidents...
+✔ Generating audit report...
+✔ Audit completed
+
+$ delobotomize analysis
+✔ Loading audit findings...
+✔ Building causal chains...
+✔ Generating analysis report...
+✔ Analysis completed
+
+$ delobotomize recovery
+✔ Loading analysis results...
+✔ Generating recovery plan...
+✔ Validating plan steps...
+✔ Recovery plan generated
+
+# 7. Review the generated artifacts
+$ cat .delobotomize/runs/run_1234567890_abc123/artifacts/audit/AUDIT_REPORT.md
+# Shows: 5 context saturation events, 2 rate limits, 1 suspected deadlock
+
+$ cat .delobotomize/runs/run_1234567890_abc123/artifacts/recovery/RECOVERY_PLAN.md
+# Shows: Proposed fixes with confidence scores
+
+# 8. Apply fixes (creates git checkpoint first)
+$ delobotomize fix
+✔ Creating git checkpoint...
+✔ Applying fixes...
+✔ Running tests...
+✔ Generating change log...
+✔ Fixes applied successfully
+
+# 9. Stop monitoring
+$ # Go back to the first terminal
+$ # Press Ctrl+C
+⚠ Received interrupt signal
+✔ Stopping services...
+
+# 10. Check run history anytime
+$ delobotomize list-runs
+Recent runs:
+  run_1234567890_abc123 (completed) - 2024-01-15 10:30:00
+  run_1234567891_def456 (completed) - 2024-01-15 09:15:00
+
+$ delobotomize status
+Delobotomize Status:
+  Current phase: None
+  Active alerts: 0
+  Artifacts: .delobotomize/runs/
+```
 
 ## Architecture
 
@@ -40,55 +231,6 @@ delobotomize/
 │   └── proxy.log         # Proxy log (source of truth)
 └── prd.md                # Product Requirements Document
 ```
-
-## Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-```
-
-## Quick Start
-
-### 1. Initialize Delobotomize
-
-```bash
-# Initialize in your project
-delobotomize init
-
-# This will:
-# - Mirror claude docs/ to .claude/
-# - Create .delobotomize/ structure
-# - Verify integrity
-```
-
-### 2. Run Monitoring
-
-```bash
-# Start integrated monitoring and run phases
-delobotomize run
-
-# Run specific phases
-delobotomize audit
-delobotomize analysis
-delobotomize recovery
-delobotomize fix
-```
-
-### 3. Launch Dashboard
-
-```bash
-# Start backend API
-pnpm dev:backend
-
-# Start frontend dashboard
-pnpm dev:frontend
-```
-
-Visit http://localhost:5173 to view the dashboard.
 
 ## CLI Commands
 
