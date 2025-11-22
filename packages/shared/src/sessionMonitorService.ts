@@ -116,7 +116,8 @@ export class SessionMonitorService extends EventEmitter {
 
     for (const session of sessions) {
       const idleTime = Date.now() - new Date(session.lastActivity).getTime();
-      const threshold = this.stallThresholds[session.phase || 'default'] * 1000;
+      const phaseKey = (session.phase || 'default') as keyof typeof this.stallThresholds;
+      const threshold = this.stallThresholds[phaseKey] * 1000;
 
       if (idleTime > threshold && session.status !== 'stalled') {
         this.sessionStore.updateSessionStatus(session.sessionId, 'stalled');

@@ -14,60 +14,144 @@ Delobotomize is a comprehensive session-level monitoring and recovery system for
 - **No Auto-Kill Policy** - Sessions are never automatically terminated
 - **Auto-Deploy Services** - Backend and frontend start automatically (optional)
 
-## Quick Start
+## Table of Contents
 
-### Installation (One-Time Setup)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage Examples](#usage-examples)
+- [Output & Artifacts](#output--artifacts)
+- [CLI Commands Reference](#cli-commands-reference)
+- [Configuration](#configuration)
+- [Architecture](#architecture)
+- [Development](#development)
+
+## Installation
+
+### Option A: Global Install (Recommended)
 
 ```bash
-# Clone and enter the repository
 cd /path/to/delob2
-
-# Install dependencies and build all packages
 pnpm install
 pnpm build
-
-# OPTION A: Run from the repository folder
-# (No global install needed, use relative path)
-
-# OPTION B: Install globally for system-wide access
 cd packages/cli
 npm link
-# Now you can use 'delobotomize' from anywhere
 ```
 
-**Note on Global Install**: `npm link` creates a symlink so you can run `delobotomize` from anywhere on your system. You do NOT need to publish to npm or use `npm install -g` for this to work.
+After this, `delobotomize` is available system-wide.
 
-### Basic Usage
+### Option B: Run from Repository
 
 ```bash
-# Run monitoring on a project (auto-starts backend + frontend)
-delobotomize /path/to/project
+cd /path/to/delob2
+pnpm install
+pnpm build
+```
 
-# Run without dashboard
-delobotomize /path/to/project --no-frontend
+Then use: `node packages/cli/dist/index.js <command>` or `cd packages/cli && pnpm dev -- <command>`
 
-# Run without backend API
-delobotomize /path/to/project --no-backend
+**Note**: `npm link` creates a local symlink - no publishing or `npm install -g` needed.
 
-# Initialize a project first
-delobotomize init --path /path/to/project
+## Quick Start
 
-# Check status
+### First Time Setup
+
+```bash
+# Initialize a project
+cd ~/my-project
+delobotomize init
+```
+
+### Start Monitoring
+
+```bash
+# Run with auto-started backend + dashboard
+delobotomize ~/my-project
+
+# Or run without services
+delobotomize ~/my-project --no-frontend --no-backend
+```
+
+### Access Dashboard
+
+Open browser: http://localhost:5173
+
+### Run Recovery Phases
+
+```bash
+# In another terminal
+delobotomize audit
+delobotomize analysis
+delobotomize recovery
+delobotomize fix
+```
+
+### Stop Monitoring
+
+Press `Ctrl+C` in the monitoring terminal.
+
+## Usage Examples
+
+### Complete Monitoring Session
+
+```bash
+# Initialize
+delobotomize init --path ~/my-project
+
+# Start monitoring
+delobotomize ~/my-project
+```
+
+### Run Specific Phase
+
+```bash
+delobotomize run --path ~/my-project --phase audit
+```
+
+### Disable Services
+
+```bash
+# No dashboard
+delobotomize ~/my-project --no-frontend
+
+# No backend
+delobotomize ~/my-project --no-backend
+
+# Both disabled
+delobotomize ~/my-project --no-frontend --no-backend
+```
+
+### Check Status & History
+
+```bash
+# Current status
 delobotomize status
+
+# List all runs
+delobotomize list-runs
+
+# Check system health
+delobotomize check
 ```
 
-### Running from Repository (Without Global Install)
+### Recovery Workflow
 
 ```bash
-# From the delob2 directory, run via pnpm
-cd packages/cli
-pnpm dev -- /path/to/project
+# Run all phases
+delobotomize audit
+delobotomize analysis
+delobotomize recovery
+delobotomize fix
 
-# Or use the built version
-node packages/cli/dist/index.js /path/to/project
+# Rollback if needed
+delobotomize rollback
+
+# Clean artifacts
+delobotomize clean
 ```
 
-## Output Locations
+## Output & Artifacts
+
+### File Structure
 
 Delobotomize creates and manages files in the target project directory:
 

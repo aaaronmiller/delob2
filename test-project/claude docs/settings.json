@@ -1,0 +1,40 @@
+{
+  "delobotomize": {
+    "monitoring": {
+      "proxyLogPath": "./.delobotomize/proxy.log",
+      "contextWarningThreshold": 0.85,
+      "contextCriticalThreshold": 0.90
+    },
+    "stallThresholds": {
+      "audit": 120,
+      "analysis": 90,
+      "recovery": 60,
+      "fix": 30,
+      "iterate": 90,
+      "default": 60
+    },
+    "alerts": {
+      "suppressionWindow": 60000,
+      "deduplicationEnabled": true
+    },
+    "artifacts": {
+      "retentionDays": 30,
+      "autoCleanup": false
+    }
+  },
+  "mcpServers": {},
+  "tools": {
+    "bash": {
+      "enabled": true
+    },
+    "read": {
+      "enabled": true
+    },
+    "write": {
+      "enabled": true
+    },
+    "edit": {
+      "enabled": true
+    }
+  }
+}
