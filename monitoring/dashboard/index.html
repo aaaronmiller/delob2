@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delobotomize Monitoring Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-hover: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: #334155;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 2px solid var(--primary);
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .header .status {
+      display: inline-block;
+      margin-left: 15px;
+      padding: 4px 12px;
+      background: var(--success);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-card .trend {
+      font-size: 12px;
+      margin-top: 8px;
+      color: var(--text-secondary);
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 968px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .panel-header .badge {
+      background: var(--primary);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .panel-body {
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    /* Sessions List */
+    .session-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--bg-dark);
+      border-radius: 6px;
+      border-left: 3px solid var(--primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .session-item:hover {
+      background: var(--bg-hover);
+      transform: translateX(4px);
+    }
+
+    .session-item.active {
+      border-left-color: var(--success);
+      background: var(--bg-hover);
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .session-id {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .session-time {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .session-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .session-project {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    /* Events Timeline */
+    .event-item {
+      position: relative;
+      padding-left: 30px;
+      padding-bottom: 20px;
+      border-left: 2px solid var(--border);
+      margin-left: 10px;
+    }
+
+    .event-item:last-child {
+      border-left: none;
+    }
+
+    .event-dot {
+      position: absolute;
+      left: -6px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 2px solid var(--bg-card);
+    }
+
+    .event-dot.tool_use { background: var(--primary); }
+    .event-dot.rate_limit { background: var(--danger); }
+    .event-dot.context_saturation { background: var(--warning); }
+    .event-dot.session_start { background: var(--success); }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .event-type {
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: capitalize;
+    }
+
+    .event-time {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .event-context {
+      background: var(--bg-dark);
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .event-context pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* Scrollbar */
+    .panel-body::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .panel-body::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+    }
+
+    .panel-body::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .panel-body::-webkit-scrollbar-thumb:hover {
+      background: var(--bg-hover);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    /* Chart Container */
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tag {
+      padding: 6px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-tag.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .filter-tag:hover {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>
+          🔍 Delobotomize Monitoring Dashboard
+          <span class="status" v-if="connected">● LIVE</span>
+        </h1>
+        <p>Real-time monitoring for Claude Code sessions • Inspired by multi-agent-workflow</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Events</h3>
+          <div class="value">{{ stats.totalEvents || 0 }}</div>
+          <div class="trend">Across all sessions</div>
+        </div>
+        <div class="stat-card">
+          <h3>Active Sessions</h3>
+          <div class="value">{{ stats.totalSessions || 0 }}</div>
+          <div class="trend">Unique session IDs</div>
+        </div>
+        <div class="stat-card">
+          <h3>Projects</h3>
+          <div class="value">{{ stats.totalProjects || 0 }}</div>
+          <div class="trend">Monitored projects</div>
+        </div>
+        <div class="stat-card">
+          <h3>Recent Events</h3>
+          <div class="value">{{ recentEventCount }}</div>
+          <div class="trend">Last 5 minutes</div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="main-grid">
+        <!-- Sessions Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Sessions</h2>
+            <span class="badge">{{ sessions.length }}</span>
+          </div>
+          <div class="panel-body">
+            <div v-if="loading" class="loading">
+              <div class="spinner"></div>
+              <p>Loading sessions...</p>
+            </div>
+            <div v-else-if="sessions.length === 0" class="empty-state">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+              </svg>
+              <p>No sessions yet</p>
+            </div>
+            <div v-else>
+              <div
+                v-for="session in sessions"
+                :key="session.session_id"
+                class="session-item"
+                :class="{ active: session.session_id === selectedSession }"
+                @click="selectSession(session.session_id)"
+              >
+                <div class="session-header">
+                  <div class="session-id">{{ session.session_id.slice(0, 12) }}...</div>
+                  <div class="session-time">{{ formatTime(session.latest) }}</div>
+                </div>
+                <div class="session-meta">
+                  <span class="session-project">{{ session.project_id }}</span> •
+                  {{ session.event_count }} events
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Events Timeline -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Events</h2>
+            <span class="badge">{{ filteredEvents.length }}</span>
+          </div>
+          <div class="panel-body">
+            <!-- Event Type Filters -->
+            <div class="filters">
+              <div
+                class="filter-tag"
+                :class="{ active: eventTypeFilter === null }"
+                @click="eventTypeFilter = null"
+              >
+                All
+              </div>
+              <div
+                v-for="type in eventTypes"
+                :key="type"
+                class="filter-tag"
+                :class="{ active: eventTypeFilter === type }"
+                @click="eventTypeFilter = type"
+              >
+                {{ type.replace('_', ' ') }}
+              </div>
+            </div>
+
+            <div v-if="loading" class="loading">
+              <div class="spinner"></div>
+              <p>Loading events...</p>
+            </div>
+            <div v-else-if="filteredEvents.length === 0" class="empty-state">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p>No events to display</p>
+            </div>
+            <div v-else>
+              <div
+                v-for="event in filteredEvents"
+                :key="event.id"
+                class="event-item"
+              >
+                <div class="event-dot" :class="event.type"></div>
+                <div class="event-header">
+                  <div class="event-type">{{ event.type.replace('_', ' ') }}</div>
+                  <div class="event-time">{{ formatTime(event.timestamp) }}</div>
+                </div>
+                <div class="event-context" v-if="event.context && Object.keys(event.context).length > 0">
+                  <pre>{{ formatContext(event.context) }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Type Distribution Chart -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Event Distribution</h2>
+        </div>
+        <div class="panel-body">
+          <div class="chart-container">
+            <canvas id="eventChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          connected: false,
+          loading: true,
+          events: [],
+          sessions: [],
+          stats: {},
+          selectedSession: null,
+          eventTypeFilter: null,
+          eventTypes: [],
+          chart: null,
+          refreshInterval: null
+        };
+      },
+      computed: {
+        filteredEvents() {
+          let events = this.events;
+
+          if (this.selectedSession) {
+            events = events.filter(e => e.session_id === this.selectedSession);
+          }
+
+          if (this.eventTypeFilter) {
+            events = events.filter(e => e.type === this.eventTypeFilter);
+          }
+
+          return events.slice(0, 100);
+        },
+        recentEventCount() {
+          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+          return this.events.filter(e => {
+            return new Date(e.timestamp).getTime() > fiveMinutesAgo;
+          }).length;
+        }
+      },
+      mounted() {
+        this.init();
+        this.refreshInterval = setInterval(() => {
+          this.loadData();
+        }, 5000); // Refresh every 5 seconds
+      },
+      beforeUnmount() {
+        if (this.refreshInterval) {
+          clearInterval(this.refreshInterval);
+        }
+        if (this.chart) {
+          this.chart.destroy();
+        }
+      },
+      methods: {
+        async init() {
+          await this.loadData();
+          this.initChart();
+        },
+        async loadData() {
+          try {
+            // Load events
+            const eventsRes = await fetch('http://localhost:4000/api/events?limit=1000');
+            const eventsData = await eventsRes.json();
+            this.events = eventsData.events || [];
+
+            // Load stats
+            const statsRes = await fetch('http://localhost:4000/api/stats');
+            const statsData = await statsRes.json();
+            this.processStats(statsData.stats || []);
+
+            // Extract sessions
+            this.extractSessions();
+
+            // Extract event types
+            this.extractEventTypes();
+
+            this.connected = true;
+            this.loading = false;
+
+            // Update chart
+            if (this.chart) {
+              this.updateChart();
+            }
+          } catch (error) {
+            console.error('Error loading data:', error);
+            this.connected = false;
+            this.loading = false;
+          }
+        },
+        processStats(stats) {
+          const totals = stats.reduce((acc, stat) => {
+            if (!acc.total_events) {
+              acc.total_events = stat.total_events || 0;
+              acc.total_sessions = stat.total_sessions || 0;
+              acc.total_projects = stat.total_projects || 0;
+            }
+            return acc;
+          }, {});
+
+          this.stats = {
+            totalEvents: totals.total_events || 0,
+            totalSessions: totals.total_sessions || 0,
+            totalProjects: totals.total_projects || 0
+          };
+        },
+        extractSessions() {
+          const sessionMap = {};
+
+          this.events.forEach(event => {
+            if (!sessionMap[event.session_id]) {
+              sessionMap[event.session_id] = {
+                session_id: event.session_id,
+                project_id: event.project_id,
+                event_count: 0,
+                latest: event.timestamp,
+                earliest: event.timestamp
+              };
+            }
+
+            sessionMap[event.session_id].event_count++;
+
+            if (new Date(event.timestamp) > new Date(sessionMap[event.session_id].latest)) {
+              sessionMap[event.session_id].latest = event.timestamp;
+            }
+
+            if (new Date(event.timestamp) < new Date(sessionMap[event.session_id].earliest)) {
+              sessionMap[event.session_id].earliest = event.timestamp;
+            }
+          });
+
+          this.sessions = Object.values(sessionMap).sort((a, b) =>
+            new Date(b.latest) - new Date(a.latest)
+          );
+        },
+        extractEventTypes() {
+          const types = new Set();
+          this.events.forEach(e => types.add(e.type));
+          this.eventTypes = Array.from(types);
+        },
+        selectSession(sessionId) {
+          if (this.selectedSession === sessionId) {
+            this.selectedSession = null;
+          } else {
+            this.selectedSession = sessionId;
+          }
+        },
+        formatTime(timestamp) {
+          const date = new Date(timestamp);
+          const now = new Date();
+          const diff = now - date;
+
+          if (diff < 60000) {
+            return 'Just now';
+          } else if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m ago`;
+          } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h ago`;
+          } else {
+            return date.toLocaleDateString();
+          }
+        },
+        formatContext(context) {
+          if (typeof context === 'string') {
+            try {
+              return JSON.stringify(JSON.parse(context), null, 2);
+            } catch {
+              return context;
+            }
+          }
+          return JSON.stringify(context, null, 2);
+        },
+        initChart() {
+          const ctx = document.getElementById('eventChart');
+          if (!ctx) return;
+
+          this.chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: [],
+              datasets: [{
+                label: 'Events',
+                data: [],
+                backgroundColor: '#6366f1',
+                borderColor: '#4f46e5',
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    color: '#94a3b8'
+                  },
+                  grid: {
+                    color: '#334155'
+                  }
+                },
+                x: {
+                  ticks: {
+                    color: '#94a3b8'
+                  },
+                  grid: {
+                    color: '#334155'
+                  }
+                }
+              }
+            }
+          });
+
+          this.updateChart();
+        },
+        updateChart() {
+          if (!this.chart) return;
+
+          const typeCounts = {};
+          this.events.forEach(e => {
+            typeCounts[e.type] = (typeCounts[e.type] || 0) + 1;
+          });
+
+          this.chart.data.labels = Object.keys(typeCounts);
+          this.chart.data.datasets[0].data = Object.values(typeCounts);
+          this.chart.update();
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

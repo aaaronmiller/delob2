@@ -1,0 +1,39 @@
+DELOBOTOMIZE
+Copyright 2025 Delobotomize Core Team
+
+This product includes software developed by the Delobotomize Core Team.
+
+================================================================================
+
+ARCHITECTURAL INSPIRATION
+
+The design and methodology of this project was inspired by the following
+open-source projects. We studied their architecture and implemented our own
+versions based on their approaches. No code was copied; these projects served
+as architectural references and design inspiration.
+
+1. multi-agent-workflow by Apolo Pena
+   - Repository: https://github.com/apolopena/multi-agent-workflow
+   - License: MIT
+   - Copyright: © 2025 Apolo Pena
+   - Inspiration: Hook-based monitoring system architecture
+   - Our Implementation: monitoring/server/ and monitoring/hooks/
+
+2. claude-code-proxy by Aaron Miller
+   - Repository: https://github.com/aaronmiller/claude-code-proxy
+   - License: MIT
+   - Copyright: © 2025 Aaron Miller
+   - Inspiration: API proxy pattern and logging methodology
+   - Our Implementation: proxy/server.py
+
+We are grateful to these developers for creating excellent reference
+implementations that helped shape our architectural decisions.
+
+================================================================================
+
+This product integrates with but does not redistribute:
+
+- Claude Code CLI by Anthropic PBC (Proprietary License)
+  Users must install separately: npm install -g @anthropic-ai/claude-code
+
+================================================================================
