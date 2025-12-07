@@ -10,7 +10,7 @@ dist/
 # Runtime directories (created by delobotomize init)
 .delobotomize/
 .claude/
-
+test-datakiln/
 # Logs
 *.log
 npm-debug.log*

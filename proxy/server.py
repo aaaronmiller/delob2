@@ -98,9 +98,32 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
             try:
                 with urlopen(req, timeout=120) as response:
-                    response_data = response.read()
-                    response_json = json.loads(response_data)
                     status_code = response.status
+
+                    # Copy headers
+                    self.send_response(status_code)
+                    for key, value in response.headers.items():
+                        if key.lower() not in ['content-encoding', 'content-length', 'transfer-encoding', 'connection']:
+                            self.send_header(key, value)
+                    
+                    # Forward Content-Length if present
+                    content_len = response.headers.get('Content-Length')
+                    if content_len:
+                        self.send_header('Content-Length', content_len)
+                    
+                    self.end_headers()
+                    
+                    # Stream content
+                    response_data = b""
+                    while True:
+                        chunk = response.read(8192) # 8KB chunks
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        self.wfile.flush()
+                        response_data += chunk
+
+                    response_json = json.loads(response_data)
 
                     # Extract token counts
                     usage = response_json.get('usage', {})

@@ -3,6 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 import { execSync } from 'child_process';
+import { generateIntegrityChecksum } from './integrity.js';
 
 export async function initProject(fullInit: boolean = false): Promise<void> {
   const spinner = ora('Initializing Delobotomize project...').start();
@@ -67,7 +68,7 @@ export async function initProject(fullInit: boolean = false): Promise<void> {
 
 async function checkClaudeCodeInstalled(): Promise<void> {
   try {
-    execSync('which claude-code', { stdio: 'ignore' });
+    execSync('which claude', { stdio: 'ignore' });
   } catch (error) {
     console.log(chalk.red('\n✗ Claude Code CLI not found!'));
     console.log(chalk.yellow('Install it with: npm install -g @anthropic-ai/claude-code'));
@@ -244,19 +245,8 @@ This is a placeholder slash command template.
   );
 }
 
+// Add import at the top
+// import { generateIntegrityChecksum } from './integrity.js'; // Removed from here
 async function createIntegrityChecksum(delobotomizeDir: string, claudeDir: string): Promise<void> {
-  // Simple checksum creation - in real implementation would hash all files
-  const checksum = {
-    version: '15.0.0',
-    timestamp: new Date().toISOString(),
-    files: {
-      'settings.json': 'placeholder',
-      'CLAUDE.md': 'placeholder'
-    }
-  };
-
-  await fs.writeFile(
-    path.join(delobotomizeDir, 'claude-docs-integrity.json'),
-    JSON.stringify(checksum, null, 2)
-  );
+  await generateIntegrityChecksum(claudeDir, delobotomizeDir);
 }

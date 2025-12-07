@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { execSync } from 'child_process';
 import { Parser } from '../bridge/parser.js';
+import { FingerprintDetector, FileAnalysis } from '../forensics/fingerprint-detector.js';
 
 /**
  * Audit Phase
@@ -75,8 +76,11 @@ async function scanProjectStructure(projectRoot: string): Promise<any> {
     languages: new Set(),
     filesByExtension: {},
     largeFiles: [],
-    recentlyModified: []
+    recentlyModified: [],
+    forensicFindings: [] as FileAnalysis[]
   };
+
+  const forensicDetector = new FingerprintDetector();
 
   // Check if git repository
   try {
@@ -129,13 +133,26 @@ async function scanProjectStructure(projectRoot: string): Promise<any> {
           });
         }
 
-        // Track recently modified (last 24 hours)
+        // Check recently modified (last 24 hours)
         const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
         if (stats.mtime.getTime() > dayAgo) {
           inventory.recentlyModified.push({
             path: relativePath,
             modified: stats.mtime
           });
+        }
+
+        // Run Forensic Analysis on code files
+        if (['.ts', '.js', '.tsx', '.jsx', '.py'].includes(ext)) {
+          try {
+            const content = await fs.readFile(fullPath, 'utf-8');
+            const analysis = await forensicDetector.analyze(relativePath, content);
+            if (analysis.fingerprints.length > 0) {
+              inventory.forensicFindings.push(analysis);
+            }
+          } catch (err) {
+            // Ignore read errors
+          }
         }
       }
     }
@@ -292,20 +309,28 @@ async function generateAuditReport(inventory: any, incidents: any): Promise<stri
 
 ## File Statistics
 ${Object.entries(inventory.filesByExtension)
-  .sort((a: any, b: any) => b[1] - a[1])
-  .slice(0, 10)
-  .map(([ext, count]) => `- ${ext}: ${count} files`)
-  .join('\n')}
+      .sort((a: any, b: any) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([ext, count]) => `- ${ext}: ${count} files`)
+      .join('\n')}
 
 ## Large Files (>1MB)
 ${inventory.largeFiles.slice(0, 5).map((f: any) =>
-  `- ${f.path} (${Math.round(f.size / 1024 / 1024)}MB)`
-).join('\n') || 'None'}
+        `- ${f.path} (${Math.round(f.size / 1024 / 1024)}MB)`
+      ).join('\n') || 'None'}
 
 ## Recently Modified (Last 24h)
 ${inventory.recentlyModified.slice(0, 10).map((f: any) =>
-  `- ${f.path}`
-).join('\n') || 'None'}
+        `- ${f.path}`
+      ).join('\n') || 'None'}
+
+## Forensic Evidence (LLM Fingerprints)
+${inventory.forensicFindings && inventory.forensicFindings.length > 0
+      ? inventory.forensicFindings.slice(0, 10).map((f: any) =>
+        `### ${f.path} (Score: ${f.score})\n` +
+        f.fingerprints.map((p: any) => `- [${p.severity}] ${p.name}: ${p.snippet.trim().substring(0, 60)}...`).join('\n')
+      ).join('\n\n')
+      : 'No LLM failure patterns detected.'}
 
 ## Session Incidents
 - **Total Requests**: ${incidents.totalRequests}
@@ -326,13 +351,13 @@ ${inventory.recentlyModified.slice(0, 10).map((f: any) =>
 
 ## Critical Incidents
 ${incidents.rateLimits?.length > 0 ? `\n### Rate Limits (${incidents.rateLimits.length})\n` +
-  incidents.rateLimits.slice(0, 5).map((r: any) => `- ${r.timestamp} - Session: ${r.session_id.slice(0, 8)}...`).join('\n') : ''}
+      incidents.rateLimits.slice(0, 5).map((r: any) => `- ${r.timestamp} - Session: ${r.session_id.slice(0, 8)}...`).join('\n') : ''}
 
 ${incidents.stalls?.length > 0 ? `\n### Stalls (${incidents.stalls.length})\n` +
-  incidents.stalls.map((s: any) => `- ${Math.round(s.duration / 60)}min gap at ${s.startTime}`).join('\n') : ''}
+      incidents.stalls.map((s: any) => `- ${Math.round(s.duration / 60)}min gap at ${s.startTime}`).join('\n') : ''}
 
 ${incidents.contextSaturations?.length > 0 ? `\n### Context Saturations (${incidents.contextSaturations.length})\n` +
-  incidents.contextSaturations.slice(0, 5).map((c: any) => `- ${c.timestamp} - ${(c.usage * 100).toFixed(1)}% usage`).join('\n') : ''}
+      incidents.contextSaturations.slice(0, 5).map((c: any) => `- ${c.timestamp} - ${(c.usage * 100).toFixed(1)}% usage`).join('\n') : ''}
 
 ## Recommendations
 ${incidents.rateLimits?.length > 0 ? '- **CRITICAL**: Review rate limiting configuration and adjust request patterns\n' : ''}
@@ -341,6 +366,7 @@ ${incidents.stalls?.length > 0 ? '- **HIGH**: Analyze stall conditions - ' + inc
 ${incidents.contextSaturations?.length > 0 ? '- **MEDIUM**: Context approaching limits - consider chunking strategy\n' : ''}
 ${incidents.reasoningOverflows?.length > 0 ? '- **MEDIUM**: Reasoning budget being exceeded frequently\n' : ''}
 ${inventory.largeFiles?.length > 0 ? '- **LOW**: Consider splitting large files for better manageability\n' : ''}
+${inventory.forensicFindings?.length > 0 ? `- **HIGH**: Detected ${inventory.forensicFindings.length} suspicious files with LLM fingerprints. Run deep analysis.\n` : ''}
 ${!inventory.hasTests ? '- **LOW**: No test files detected - consider adding tests\n' : ''}
 
 ---

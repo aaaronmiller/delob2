@@ -184,7 +184,29 @@ stack
   .description('Stop all components')
   .action(async () => {
     console.log(chalk.blue('🛑 Stopping Delobotomize stack...'));
-    console.log(chalk.yellow('⚠ Stack management not yet implemented'));
+    try {
+      const { execSync } = await import('child_process');
+
+      // Stop Proxy
+      try {
+        execSync('pkill -f "proxy/server.py"', { stdio: 'ignore' });
+        console.log(chalk.green('✓ Proxy stopped'));
+      } catch {
+        console.log(chalk.gray('  Proxy not running'));
+      }
+
+      // Stop Monitoring Server
+      try {
+        execSync('pkill -f "monitoring/server/index.ts"', { stdio: 'ignore' });
+        console.log(chalk.green('✓ Monitoring server stopped'));
+      } catch {
+        console.log(chalk.gray('  Monitoring server not running'));
+      }
+
+      console.log(chalk.green('Stack stopped.'));
+    } catch (error) {
+      console.error(chalk.red('Error stopping stack:'), error);
+    }
   });
 
 stack
@@ -192,7 +214,26 @@ stack
   .description('Show running processes and ports')
   .action(async () => {
     console.log(chalk.blue('📊 Stack status:'));
-    console.log(chalk.yellow('⚠ Stack management not yet implemented'));
+    try {
+      const { execSync } = await import('child_process');
+      const checkPort = (port: number, name: string) => {
+        try {
+          execSync(`lsof -i :${port}`, { stdio: 'ignore' });
+          console.log(chalk.green(`✓ ${name} (Port ${port}): Running`));
+          return true;
+        } catch {
+          console.log(chalk.red(`✗ ${name} (Port ${port}): Stopped`));
+          return false;
+        }
+      };
+
+      checkPort(8082, 'Proxy Server');
+      checkPort(4000, 'Monitoring Server');
+      checkPort(5173, 'Vue Dashboard');
+
+    } catch (error) {
+      console.error(chalk.red('Error checking status:'), error);
+    }
   });
 
 // PROJECT MANAGEMENT COMMANDS
@@ -229,7 +270,156 @@ program
   .description('Remove old runs (keep last 10)')
   .action(async () => {
     console.log(chalk.blue('🧹 Cleaning old runs...'));
-    console.log(chalk.yellow('⚠ Clean command not yet implemented'));
+    try {
+      const { cleanupOldRuns } = await import('./artifacts.js');
+      await cleanupOldRuns(process.cwd(), 10);
+      console.log(chalk.green('✓ Old runs cleaned'));
+    } catch (error) {
+      console.error(chalk.red('✗ Clean failed:'), error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-runs')
+  .description('List historical runs')
+  .action(async () => {
+    try {
+      const { listRuns } = await import('./artifacts.js');
+      const runs = await listRuns(process.cwd());
+
+      if (runs.length === 0) {
+        console.log(chalk.yellow('No runs found.'));
+        return;
+      }
+
+      console.log(chalk.blue('📋 Historical Runs\n'));
+      for (const run of runs) {
+        const status = run.status === 'completed' ? chalk.green('✓') :
+          run.status === 'failed' ? chalk.red('✗') : chalk.yellow('⏳');
+        console.log(`${status} ${run.run_id}`);
+        console.log(chalk.gray(`   Started: ${run.start_time}`));
+        console.log(chalk.gray(`   Phases: ${run.phases_completed.join(', ') || 'none'}`));
+        console.log();
+      }
+    } catch (error) {
+      console.error(chalk.red('✗ List runs failed:'), error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('rollback')
+  .description('Revert to a checkpoint')
+  .option('--run-id <id>', 'Run ID to rollback')
+  .action(async (options) => {
+    if (!options.runId) {
+      console.log(chalk.red('✗ --run-id is required'));
+      process.exit(1);
+    }
+    console.log(chalk.blue(`🔄 Rolling back to ${options.runId}...`));
+    console.log(chalk.yellow('⚠ Rollback requires git history. Check commits.json in the run directory.'));
+    console.log(chalk.gray('\nManual rollback:'));
+    console.log(chalk.gray(`  git log --oneline -10`));
+    console.log(chalk.gray(`  git revert <commit-sha>`));
+  });
+
+// PROXY COMMANDS
+const proxy = program
+  .command('proxy')
+  .description('Control API proxy');
+
+proxy
+  .command('start')
+  .description('Start proxy server')
+  .action(async () => {
+    console.log(chalk.blue('🚀 Starting proxy server...'));
+    try {
+      const { spawn } = await import('child_process');
+      const proxyPath = path.resolve(process.cwd(), 'proxy', 'server.py');
+
+      const child = spawn('python3', [proxyPath], {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          PROXY_PORT: '8082',
+          PROXY_LOG_PATH: '.delobotomize/proxy.log'
+        }
+      });
+
+      child.on('error', (error) => {
+        console.error(chalk.red('Failed to start proxy:'), error);
+        process.exit(1);
+      });
+
+    } catch (error) {
+      console.error(chalk.red('✗ Proxy start failed:'), error);
+      process.exit(1);
+    }
+  });
+
+proxy
+  .command('stop')
+  .description('Stop proxy server')
+  .action(async () => {
+    console.log(chalk.blue('🛑 Stopping proxy server...'));
+    try {
+      const { execSync } = await import('child_process');
+      execSync('pkill -f "proxy/server.py"', { stdio: 'ignore' });
+      console.log(chalk.green('✓ Proxy stopped'));
+    } catch {
+      console.log(chalk.yellow('⚠ No proxy process found'));
+    }
+  });
+
+// MONITORING COMMANDS
+const monitoring = program
+  .command('monitoring')
+  .description('Control monitoring server');
+
+monitoring
+  .command('start')
+  .description('Start monitoring server')
+  .action(async () => {
+    console.log(chalk.blue('🚀 Starting monitoring server...'));
+    try {
+      const { spawn } = await import('child_process');
+      const serverPath = path.resolve(process.cwd(), 'monitoring', 'server', 'index.ts');
+
+      const child = spawn('bun', ['run', serverPath], {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          PORT: '4000',
+          DB_PATH: '.delobotomize/monitoring.db'
+        }
+      });
+
+      child.on('error', (error) => {
+        console.error(chalk.red('Failed to start monitoring:'), error);
+        process.exit(1);
+      });
+
+    } catch (error) {
+      console.error(chalk.red('✗ Monitoring start failed:'), error);
+      process.exit(1);
+    }
+  });
+
+monitoring
+  .command('stop')
+  .description('Stop monitoring server')
+  .action(async () => {
+    console.log(chalk.blue('🛑 Stopping monitoring server...'));
+    try {
+      const { execSync } = await import('child_process');
+      execSync('pkill -f "monitoring/server/index.ts"', { stdio: 'ignore' });
+      console.log(chalk.green('✓ Monitoring stopped'));
+    } catch {
+      console.log(chalk.yellow('⚠ No monitoring process found'));
+    }
   });
 
 // DASHBOARD COMMANDS
@@ -242,7 +432,8 @@ dashboard
   .description('Start Vue dashboard (port 5173)')
   .action(async () => {
     console.log(chalk.blue('🎨 Starting Vue dashboard...'));
-    console.log(chalk.yellow('⚠ Dashboard not yet implemented'));
+    console.log(chalk.gray('Dashboard available at monitoring server: http://localhost:4000'));
+    console.log(chalk.yellow('⚠ Standalone Vue dashboard requires integrations/multi-agent-workflow/'));
   });
 
 dashboard
@@ -250,7 +441,7 @@ dashboard
   .description('Start Svelte dashboard (port 5174)')
   .action(async () => {
     console.log(chalk.blue('🎨 Starting Svelte dashboard...'));
-    console.log(chalk.yellow('⚠ Dashboard not yet implemented'));
+    console.log(chalk.yellow('⚠ Svelte dashboard requires integrations/dashboard-svelte/'));
   });
 
 dashboard
@@ -258,7 +449,8 @@ dashboard
   .description('Start both dashboards')
   .action(async () => {
     console.log(chalk.blue('🎨 Starting both dashboards...'));
-    console.log(chalk.yellow('⚠ Dashboard not yet implemented'));
+    console.log(chalk.yellow('⚠ Dashboard integration pending vendor setup'));
   });
 
 program.parse();
+

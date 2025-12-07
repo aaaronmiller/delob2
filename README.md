@@ -55,7 +55,11 @@ Delobotomize vendors two complete MIT-licensed systems:
 
 ## Documentation
 
-- [Product Requirements Document](prd-15.md) - Complete specification
+> **📌 Start here:** [PROJECT_TRUTH.md](PROJECT_TRUTH.md) - Authoritative source of truth for architecture, methodology, and bootstrap
+
+- [PROJECT_TRUTH.md](PROJECT_TRUTH.md) - **Start here** - Complete architectural understanding
+- [Product Requirements Document](prd-15.md) - Original specification
+- [claude-code/README.md](claude-code/README.md) - Agent and skill documentation
 - [CLAUDE.md](CLAUDE.md) - Development guide
 - [NOTICE](NOTICE) - Legal attribution
 

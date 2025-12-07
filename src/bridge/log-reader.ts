@@ -43,7 +43,12 @@ export class LogReader extends EventEmitter {
     this.emit('started');
   }
 
+  private reading: boolean = false;
+
   async readNewLines(): Promise<void> {
+    if (this.reading) return;
+    this.reading = true;
+
     try {
       const stats = await fs.promises.stat(this.logPath);
       const currentSize = stats.size;
@@ -73,16 +78,18 @@ export class LogReader extends EventEmitter {
           }
         });
 
-        stream.on('end', () => {
-          this.lastPosition = currentSize;
-        });
-
-        stream.on('error', (error) => {
-          this.emit('error', error);
+        await new Promise<void>((resolve, reject) => {
+          stream.on('end', () => {
+            this.lastPosition = currentSize;
+            resolve();
+          });
+          stream.on('error', (error) => reject(error));
         });
       }
     } catch (error) {
       this.emit('error', error);
+    } finally {
+      this.reading = false;
     }
   }
 

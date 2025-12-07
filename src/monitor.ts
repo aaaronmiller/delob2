@@ -28,9 +28,18 @@ function startMonitoringServer(): void {
     env: {
       ...process.env,
       PORT: '4000',
-      DB_PATH: '.delobotomize/monitoring.db'
+      DB_PATH: '.delobotomize/delobotomize.db'
     }
   });
+
+  // Write monitor.port file
+  try {
+    const fs = require('fs');
+    const portPath = path.resolve(process.cwd(), '.delobotomize/monitor.port');
+    fs.writeFileSync(portPath, '4000');
+  } catch (e) {
+    console.error(chalk.yellow('Failed to write monitor.port file'));
+  }
 
   monitoringServer.on('error', (error) => {
     console.error(chalk.red('Failed to start monitoring server:'), error);

@@ -1,0 +1,84 @@
+name: LLM Fingerprint Submission
+description: Submit a new LLM failure pattern for detection
+title: "[Fingerprint]: "
+labels: ["fingerprint", "triage"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Hallucination
+        - Context Collapse
+        - Model Quality Mismatch
+        - Context Saturation
+        - Setup Failure
+        - AI Comment Pattern
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: pattern_name
+    attributes:
+      label: Fingerprint Name
+      description: e.g., "Phantom Import", "Recursive Retry Loop"
+      placeholder: "F-XXX-000: Pattern Name"
+    validations:
+      required: true
+
+  - type: textarea
+    id: pattern_description
+    attributes:
+      label: Description
+      description: Describe what the pattern looks like and why it indicates failure.
+      placeholder: |
+        The model attempts to import a file that does not exist, often using a relative path that looks plausible but is incorrect.
+    validations:
+      required: true
+
+  - type: textarea
+    id: detection_logic
+    attributes:
+      label: Detection Logic / Regex
+      description: Provide a Regex or logic to detect this.
+      placeholder: |
+        REGEX: /from\s+['"](\.[^'"]+)['"]/
+        LOGIC: Check if capture group 1 exists on file system.
+    validations:
+      required: true
+      render: markdown
+
+  - type: textarea
+    id: example_code
+    attributes:
+      label: Example Code (Evidence)
+      description: Paste a snippet of code containing the fingerprint.
+      render: typescript
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical (Indicates definite failure)
+        - High (Strong indicator of failure)
+        - Medium (Suspicious)
+        - Low (Code smell)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Detection Confidence
+      description: How likely is a false positive?
+      options:
+        - Very High (Rare false positives)
+        - High
+        - Medium
+        - Low (Heuristic only)
+    validations:
+      required: true

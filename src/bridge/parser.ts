@@ -8,7 +8,7 @@ import { z } from 'zod';
  */
 
 const ProxyLogSchema = z.object({
-  timestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
+  timestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}Z$/),
   session_id: z.string().uuid(),
   method: z.string(),
   status: z.number().int().min(100).max(599),

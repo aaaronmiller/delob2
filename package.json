@@ -9,7 +9,7 @@
     "delobotomize-monitor": "./dist/monitor.js"
   },
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target node",
+    "build": "bun build src/cli.ts src/monitor.ts --outdir dist --target node",
     "dev": "bun run src/cli.ts",
     "test": "bun test",
     "postinstall": "node scripts/postinstall.js",
