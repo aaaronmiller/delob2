@@ -1,5 +1,12 @@
 # Delobotomize v15.0
 
+<p>
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white">
+<img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/Claude%20Code-Recovery-8b5cf6?style=flat-square&logo=anthropic&logoColor=white">
+<img src="https://img.shields.io/badge/HITL-Reversible%20Fixes-22c55e?style=flat-square">
+</p>
+
 **Claude Code recovery pipeline that rescues context-collapsed AI coding sessions**
 
 ## Overview
